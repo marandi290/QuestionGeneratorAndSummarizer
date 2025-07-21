@@ -1,4 +1,25 @@
-streamlit
-transformers
-torch
-PyMuPDF
+# Core Libraries
+transformers==4.41.1
+torch>=2.0.0
+sentencepiece
+toolz
+nltk
+scikit-learn
+sense2vec==2.0.0
+
+# Utility
+tqdm
+numpy
+pandas
+
+# For saving/loading models
+joblib
+
+# Optional: If using spacy for NLP pipeline
+spacy>=3.0.0
+
+# Optional: If you use pytorch-lightning for model training/debugging
+pytorch-lightning>=2.0.0
+
+# Optional: If using huggingface CLI for model download
+huggingface-hub
