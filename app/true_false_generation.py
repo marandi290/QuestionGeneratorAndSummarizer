@@ -2,6 +2,13 @@ import nltk
 import random
 import spacy
 from nltk.tokenize import sent_tokenize
+from nltk.corpus import wordnet as wn
+from ml_models.distractor_generation.distractor_generator import DistractorGenerator
+from ml_models.sense2vec_distractor_generation.sense2vec_generation import Sense2VecDistractorGeneration
+
+# Initialize once at top level
+t5_dg = DistractorGenerator()
+s2v_dg = Sense2VecDistractorGeneration()
 
 nltk.download('punkt')
 
@@ -33,34 +40,54 @@ def negate_sentence(sentence):
             new_tokens.append(token.text)
     return ' '.join(new_tokens)
 
+def get_distractors_wordnet(word):
+    """Use WordNet to find distractors (synonyms, hyponyms)."""
+    distractors = set()
+    for syn in wn.synsets(word):
+        for lemma in syn.lemmas():
+            name = lemma.name().replace('_', ' ')
+            if name.lower() != word.lower():
+                distractors.add(name)
+        for hyponym in syn.hyponyms():
+            for lemma in hyponym.lemmas():
+                name = lemma.name().replace('_', ' ')
+                if name.lower() != word.lower():
+                    distractors.add(name)
+    return list(distractors)[:5]
 
-def mask_sentence(sentence):
+def mask_sentence(sentence, context_text=""):
     """
-    Mask a key word (Named Entity or NOUN) in the sentence.
-    Return masked sentence, correct answer, and a fake (random) answer.
+    Mask a word and generate distractor-based True/False statements.
+    Uses DistractorGenerator (T5) or Sense2Vec.
     """
     doc = nlp(sentence)
-    # Prioritize named entities
     targets = [ent for ent in doc.ents if ent.label_ in ["PERSON", "ORG", "GPE", "LOC", "DATE", "EVENT", "WORK_OF_ART"]]
     if not targets:
-        # Fallback to nouns
         targets = [token for token in doc if token.pos_ == "NOUN" and token.is_alpha]
 
     if not targets:
         return None, None, None
 
     target = random.choice(targets)
-    correct_answer = target.text
+    correct_answer = target.text.strip()
 
-    # Replace with a blank
+    # Generate distractors (try T5 model first, fallback to Sense2Vec)
+    try:
+        distractors = t5_dg.generate(generate_count=3, correct=correct_answer, question=sentence, context=context_text)
+    except Exception:
+        distractors = []
+
+    if not distractors:
+        distractors = s2v_dg.generate(correct_answer, desired_count=3)
+
+    if not distractors:
+        return None, None, None
+
+    # Use the first distractor as the "fake" answer
+    fake_answer = distractors[0]
     masked = sentence.replace(correct_answer, "_____")
 
-    # Generate fake answer (just shuffling some nouns from a generic pool)
-    fake_words = ["India", "Microsoft", "Einstein", "Mount Everest", "1999", "Python"]
-    fake_answer = random.choice([word for word in fake_words if word != correct_answer])
-
     return masked, correct_answer, fake_answer
-
 
 def generate_true_false_questions(text, num_questions=5, method="both"):
     sentences = get_sentences(text)
@@ -83,7 +110,7 @@ def generate_true_false_questions(text, num_questions=5, method="both"):
         else:
             # Use masking
             masked, correct, fake = mask_sentence(sentence)
-            if masked and correct and fake:
+            if masked and correct:
                 if random.random() > 0.5:
                     tf_questions.append({"question": f"{masked} (Answer: {correct})", "answer": "True"})
                 else:
