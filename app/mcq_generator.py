@@ -52,12 +52,6 @@ class MCQGenerator:
         questions = self._generate_question_answer_pairs(cleaned_text, desired_count)
         questions = self._generate_distractors(cleaned_text, questions)
 
-        for question in questions:
-            print("-------------------")
-            print(f"Answer: {question.answerText}")
-            print(f"Question: {question.questionText}")
-            print(f"Distractors: {question.distractors}")
-
         return questions
 
     def _generate_question_answer_pairs(self, context: str, desired_count: int) -> List[Question]:
