@@ -3,8 +3,8 @@ import random
 import spacy
 from nltk.tokenize import sent_tokenize
 from nltk.corpus import wordnet as wn
-from ml_models.distractor_generation.distractor_generator import DistractorGenerator
-from ml_models.sense2vec_distractor_generation.sense2vec_generation import Sense2VecDistractorGeneration
+from app.ml_models.distractor_generation.distractor_generator import DistractorGenerator
+from app.ml_models.sense2vec_distractor_generation.sense2vec_generation import Sense2VecDistractorGeneration
 
 # Initialize once at top level
 t5_dg = DistractorGenerator()
@@ -118,21 +118,3 @@ def generate_true_false_questions(text, num_questions=5, method="both"):
 
     return tf_questions
 
-
-if __name__ == "__main__":
-    sample_text = """
-    Isaac Newton was an English mathematician, physicist, and astronomer who is widely recognized as one of the most influential scientists of all time. 
-He formulated the laws of motion and universal gravitation. 
-Newton was born in 1643 in Woolsthorpe, England. 
-He was elected President of the Royal Society in 1703 and was knighted by Queen Anne in 1705. 
-The Royal Society is one of the oldest scientific institutions in the world. 
-Cambridge University was where Newton studied and later taught. 
-He published his book "Philosophiæ Naturalis Principia Mathematica" in 1687, which laid the foundations of classical mechanics.
-    """
-
-    print("Generated True/False Questions:\n")
-    questions = generate_true_false_questions(sample_text, num_questions=7, method="both")
-
-    for idx, qa in enumerate(questions, 1):
-        print(f"Q{idx}: {qa['question']}")
-        print(f"Answer: {qa['answer']}\n")

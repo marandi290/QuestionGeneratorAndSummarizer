@@ -1,35 +1,99 @@
-import textwrap
-
+import os
+from app.utils.video_processing import video_to_text
+from flask import Flask, render_template, request
+from flask_cors import CORS
 from app.mcq_generator import MCQGenerator
+from app.true_false_generation import generate_true_false_questions
+from app.utils.extraction import extract_and_clean_uploaded_file
+from app.ml_models.summary_generation.summarizer import generate_summary_from_long_text
+from werkzeug.utils import secure_filename
+from app.ml_models.descriptive_question_generation.descriptive_long_qg import generate_questions_from_long_text as generate_long_answer_questions
+from app.ml_models.descriptive_question_generation.descriptive_short_qg import generate_questions_from_long_text as generate_short_answer_questions
 
-def show_result(generated: str, answer: str, context:str, original_question: str = ''):
-    
-    print('Context:')
+app = Flask(__name__)
+CORS(app)
 
-    for wrap in textwrap.wrap(context, width=120):
-        print(wrap)
-    print()
+# Folder to save uploaded video files
+UPLOAD_FOLDER = os.path.join('app', 'static', 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-    print('Question:')
-    print(generated)
+@app.route('/', methods=['GET', 'POST'])
+def home():
+    results = {
+        "summary": "",
+        "mcq": "",
+        "true_false": "",
+        "short_answer": "",
+        "long_answer": "",
+        "fill_blank": "",
+        "match_following": ""
+    }
+    typed_text = request.form.get("text", "")
+    input_text = ""
 
-    print('Answer:')
-    print(answer)
-    print('-----------------------------')
+    if request.method == "POST":
+        task = request.form.get("task")  # Safely get task
+
+        #input_text = ""
+        uploaded_file = request.files.get("file")
+        uploaded_video = request.files.get("video")
+        #typed_text = request.form.get("text")
+
+        # File upload
+        if uploaded_file:
+            input_text = extract_and_clean_uploaded_file(uploaded_file)
+
+        # Video upload
+        elif uploaded_video:
+            filename = secure_filename(uploaded_video.filename)
+            video_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            uploaded_video.save(video_path)
+
+            # Convert video to text
+            input_text = video_to_text(video_path)
+        elif typed_text:
+            input_text = typed_text.strip()
+            
+        if not input_text:
+            results[task] = "❗ No input text provided."
+        else:
+            if task == "mcq":
+                mcq_generator = MCQGenerator(is_verbose=True)
+                questions = mcq_generator.generate_mcq_questions(input_text, desired_count=5)
+                results["mcq"] = '\n\n'.join([
+                    f"Q: {q.questionText}\nAns: {q.answerText}\nOptions: {', '.join(q.distractors)}"
+                    for q in questions
+                ])
+            elif task == "true_false":
+                questions = generate_true_false_questions(input_text, num_questions=5, method="both")
+                results["true_false"] = '\n\n'.join([
+                    f"Q: {q['question']}\nAns: {q['answer']}" for q in questions
+                ])
+            elif task == "summary":
+                summaries = generate_summary_from_long_text(input_text)
+                results["summary"] = '\n\n'.join(summaries)
+            elif task == "short_answer":
+                questions = generate_short_answer_questions(input_text)
+                results["short_answer"] = '\n\n'.join([
+                    f"{q}" for q in questions
+                ])
+            elif task == "long_answer":
+                questions = generate_long_answer_questions(input_text)
+                results["long_answer"] = '\n\n'.join([
+                    f"{q}" for q in questions
+                ])
+            elif task == "fill_blank":
+                results["fill_blank"] = "🔧 Fill in the blanks generation not implemented yet."
+            elif task == "match_following":
+                results["match_following"] = "🔧 Match the following generation not implemented yet."
+
+    return render_template(
+        "index.html",
+        results=results,
+        text=input_text
+    )
 
 
-MCQ_Generator = MCQGenerator(True)
-
-context = '''The koala or, inaccurately, koala bear[a] (Phascolarctos cinereus), is an arboreal herbivorous marsupial native to Australia. It is the only extant representative of the family Phascolarctidae and its closest living relatives are the wombats, which are members of the family Vombatidae. The koala is found in coastal areas of the mainland's eastern and southern regions, inhabiting Queensland, New South Wales, Victoria, and South Australia. It is easily recognisable by its stout, tailless body and large head with round, fluffy ears and large, spoon-shaped nose. The koala has a body length of 60–85 cm (24–33 in) and weighs 4–15 kg (9–33 lb). Fur colour ranges from silver grey to chocolate brown. Koalas from the northern populations are typically smaller and lighter in colour than their counterparts further south. These populations possibly are separate subspecies, but this is disputed.'''
-
-context_oxygen = '''Oxygen is the chemical element with the symbol O and atomic number 8. It is a member of the chalcogen group in the periodic table, a highly reactive nonmetal, and an oxidizing agent that readily forms oxides with most elements as well as with other compounds. Oxygen is Earth's most abundant element, and after hydrogen and helium, it is the third-most abundant element in the universe. At standard temperature and pressure, two atoms of the element bind to form dioxygen, a colorless and odorless diatomic gas with the formula O
-2. Diatomic oxygen gas currently constitutes 20.95% of the Earth's atmosphere, though this has changed considerably over long periods of time. Oxygen makes up almost half of the Earth's crust in the form of oxides.[3]
-
-Dioxygen provides the energy released in combustion[4] and aerobic cellular respiration,[5] and many major classes of organic molecules in living organisms contain oxygen atoms, such as proteins, nucleic acids, carbohydrates, and fats, as do the major constituent inorganic compounds of animal shells, teeth, and bone. Most of the mass of living organisms is oxygen as a component of water, the major constituent of lifeforms. Oxygen is continuously replenished in Earth's atmosphere by photosynthesis, which uses the energy of sunlight to produce oxygen from water and carbon dioxide. Oxygen is too chemically reactive to remain a free element in air without being continuously replenished by the photosynthetic action of living organisms. Another form (allotrope) of oxygen, ozone (O
-3), strongly absorbs ultraviolet UVB radiation and the high-altitude ozone layer helps protect the biosphere from ultraviolet radiation. However, ozone present at the surface is a byproduct of smog and thus a pollutant.
-
-Oxygen was isolated by Michael Sendivogius before 1604, but it is commonly believed that the element was discovered independently by Carl Wilhelm Scheele, in Uppsala, in 1773 or earlier, and Joseph Priestley in Wiltshire, in 1774. Priority is often given for Priestley because his work was published first. Priestley, however, called oxygen "dephlogisticated air", and did not recognize it as a chemical element. The name oxygen was coined in 1777 by Antoine Lavoisier, who first recognized oxygen as a chemical element and correctly characterized the role it plays in combustion.
-
-Common uses of oxygen include production of steel, plastics and textiles, brazing, welding and cutting of steels and other metals, rocket propellant, oxygen therapy, and life support systems in aircraft, submarines, spaceflight and diving.'''
-
-MCQ_Generator.generate_mcq_questions(context_oxygen, 10) 
+if __name__ == '__main__':
+    app.run(debug=True)
