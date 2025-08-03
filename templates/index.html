@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Question Generator</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>📘 AI Question Generator & Summarizer</h1>
+
+    <form action="/" method="POST" enctype="multipart/form-data">
+      <div class="form-group">
+        <label>📎 Upload PDF or Text File:</label>
+        <input type="file" name="file" accept=".pdf,.txt" />
+      </div>
+
+      <div class="form-group">
+        <label>🎥 Upload Video Lecture:</label>
+        <input type="file" name="video" accept="video/*" />
+      </div>
+
+      <div class="form-group">
+        <label>📝 Or Paste Lecture Text:</label>
+        <textarea name="text" rows="8" placeholder="Enter or paste text here...">{{text}}</textarea>
+      </div>
+
+      <div class="button-group">
+        <button name="task" value="summary">📄 Summarize</button>
+        <button name="task" value="mcq">🧠 Generate MCQs</button>
+        <button name="task" value="true_false">✔️ True/False</button>
+        <button name="task" value="short_answer">✏️ Short Answer</button>
+        <button name="task" value="long_answer">📚 Long Answer</button>
+        <button name="task" value="fill_blank">🔳 Fill in the Blanks</button>
+        <button name="task" value="match_following">🔗 Match the Following</button>
+      </div>
+    </form>
+
+    {% if results %}
+    <div class="output-wrapper">
+      {% if results.summary %}
+      <div class="output-section">
+        <h3>📄 Summary:</h3>
+        <pre>{{ results.summary }}</pre>
+      </div>
+      {% endif %}
+
+      {% if results.mcq %}
+      <div class="output-section">
+        <h3>🧠 MCQs:</h3>
+        <pre>{{ results.mcq }}</pre>
+      </div>
+      {% endif %}
+
+      {% if results.true_false %}
+      <div class="output-section">
+        <h3>✔️ True/False:</h3>
+        <pre>{{ results.true_false }}</pre>
+      </div>
+      {% endif %}
+
+      {% if results.short_answer %}
+      <div class="output-section">
+        <h3>✏️ Short Answer Questions:</h3>
+        <pre>{{ results.short_answer }}</pre>
+      </div>
+      {% endif %}
+
+      {% if results.long_answer %}
+      <div class="output-section">
+        <h3>📚 Long Answer Questions:</h3>
+        <pre>{{ results.long_answer }}</pre>
+      </div>
+      {% endif %}
+
+      {% if results.fill_blank %}
+      <div class="output-section">
+        <h3>🔳 Fill in the Blanks:</h3>
+        <pre>{{ results.fill_blank }}</pre>
+      </div>
+      {% endif %}
+
+      {% if results.match_following %}
+      <div class="output-section">
+        <h3>🔗 Match the Following:</h3>
+        <pre>{{ results.match_following }}</pre>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</body>
+</html>
