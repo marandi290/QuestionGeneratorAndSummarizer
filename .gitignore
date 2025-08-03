@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 .env
 outputs/
+assets
 venv/
 app/ml_models/question_generation/models/multitask-qg-ag.ckpt
 app/ml_models/sense2vec_distractor_generation/data/s2v_old/vectors
