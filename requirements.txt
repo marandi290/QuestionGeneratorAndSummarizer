@@ -6,11 +6,18 @@ toolz
 nltk
 scikit-learn
 sense2vec==2.0.0
+moviepy
+openai-whisper
+protobuf
 
 # Utility
 tqdm
 numpy
 pandas
+Flask
+flask_cors
+PyPDF2
+
 
 # For saving/loading models
 joblib
