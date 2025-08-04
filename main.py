@@ -6,6 +6,7 @@ from app.mcq_generator import MCQGenerator
 from app.true_false_generation import generate_true_false_questions
 from app.utils.extraction import extract_and_clean_uploaded_file
 from app.ml_models.summary_generation.summarizer import generate_summary_from_long_text
+from app.ml_models.summary_generation.bart_summarizer import summarize_long_text as bart_generate_summary
 from werkzeug.utils import secure_filename
 from app.ml_models.descriptive_question_generation.descriptive_long_qg import generate_questions_from_long_text as generate_long_answer_questions
 from app.ml_models.descriptive_question_generation.descriptive_short_qg import generate_questions_from_long_text as generate_short_answer_questions
@@ -71,8 +72,8 @@ def home():
                     f"Q: {q['question']}\nAns: {q['answer']}" for q in questions
                 ])
             elif task == "summary":
-                summaries = generate_summary_from_long_text(input_text)
-                results["summary"] = '\n\n'.join(summaries)
+                summaries = bart_generate_summary(input_text)
+                results["summary"] = summaries if summaries else "❗ No summary generated."
             elif task == "short_answer":
                 questions = generate_short_answer_questions(input_text)
                 results["short_answer"] = '\n\n'.join([

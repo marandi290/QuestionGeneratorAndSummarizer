@@ -10,3 +10,4 @@ app/ml_models/distractor_generation/models/race-distractors.ckpt
 app/ml_models/descriptive_question_generation/t5-ap-model
 app/ml_models/whisper_models
 app/static/uploads/
+app/ml_models/summary_generation/bart_model
